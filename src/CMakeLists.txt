@@ -32,17 +32,8 @@ set(default_deps
    	alsa
 	glib-2.0
 	x11
+	gtk+-3.0>=3.12.0
 )
-
-if(WITH_GTK3)
-	LIST(APPEND default_deps "gtk+-3.0>=3.12.0")
-else(WITH_GTK3)
-	LIST(APPEND default_deps "gtk+-2.0>=2.24.0")
-endif(WITH_GTK3)
-
-if(WITH_LIBNOTIFY)
-	LIST(APPEND default_deps "libnotify")
-endif(WITH_LIBNOTIFY)
 
 pkg_check_modules(PNMixer_DEPS REQUIRED
 	${default_deps}
@@ -50,31 +41,11 @@ pkg_check_modules(PNMixer_DEPS REQUIRED
 
 
 ## main pnmixer target
-add_executable(pnmixer ${PNMixer_sources})
+add_executable(volume-mixer-applet ${PNMixer_sources})
 # and its flags
-target_link_libraries(pnmixer "${PNMixer_DEPS_LDFLAGS}")
-target_link_libraries(pnmixer m)
-target_compile_options(pnmixer PUBLIC "${PNMixer_DEPS_CFLAGS}")
-target_compile_definitions(pnmixer PUBLIC -DHAVE_CONFIG_H)
+target_link_libraries(volume-mixer-applet "${PNMixer_DEPS_LDFLAGS}")
+target_link_libraries(volume-mixer-applet m)
+target_compile_options(volume-mixer-applet PUBLIC "${PNMixer_DEPS_CFLAGS}")
+target_compile_definitions(volume-mixer-applet PUBLIC -DHAVE_CONFIG_H)
 
-install(TARGETS pnmixer DESTINATION "${CMAKE_INSTALL_BINDIR}")
-
-
-## doc target
-if(BUILD_DOCUMENTATION)
-	find_package(Doxygen)
-	if(NOT DOXYGEN_FOUND)
-		message(FATAL_ERROR "Doxygen is needed to build the documentation. Please install it correctly.")
-	endif()
-
-	CONFIGURE_FILE("${CMAKE_CURRENT_SOURCE_DIR}/Doxyfile.in"
-		"${CMAKE_CURRENT_BINARY_DIR}/Doxyfile")
-
-	# always built
-	add_custom_target(doc ALL
-		${DOXYGEN_EXECUTABLE} "${CMAKE_CURRENT_BINARY_DIR}/Doxyfile"
-		WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}")
-	install(DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/html"
-		DESTINATION "${CMAKE_INSTALL_DOCDIR}")
-endif(BUILD_DOCUMENTATION)
-
+install(TARGETS volume-mixer-applet DESTINATION "${CMAKE_INSTALL_BINDIR}")

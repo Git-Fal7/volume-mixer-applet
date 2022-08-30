@@ -1,8 +1,4 @@
-if(WITH_GTK3)
-	file(GLOB ui_files *-gtk3.glade)
-else(WITH_GTK3)
-	file(GLOB ui_files *-gtk2.glade)
-endif(WITH_GTK3)
+file(GLOB ui_files *.glade)
 
 install(FILES ${ui_files} DESTINATION "${CMAKE_INSTALL_DATADIR}/${PACKAGE}/ui")
 

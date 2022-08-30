@@ -31,15 +31,9 @@
 
 #include "main.h"
 
-#ifdef WITH_GTK3
-#define POPUP_MENU_UI_FILE "popup-menu-gtk3.glade"
-#else
-#define POPUP_MENU_UI_FILE "popup-menu-gtk2.glade"
-#endif
+#define POPUP_MENU_UI_FILE "popup-menu.glade"
 
 /* Helpers */
-
-#ifdef WITH_GTK3
 
 /* Updates the mute checkbox according to the current audio state. */
 static void
@@ -61,38 +55,6 @@ update_mute_check(GtkToggleButton *mute_check, gboolean has_mute, gboolean muted
 	}
 }
 
-#else
-
-/* Updates the mute item according to the current audio state. */
-static void
-update_mute_item(GtkCheckMenuItem *mute_item, GCallback handler_func,
-                 gpointer handler_data, gboolean has_mute, gboolean muted)
-{
-	/* On Gtk2 version, we must block the signals sent by the GtkCheckMenuItem
-	 * before we update it manually.
-	 */
-	gint n_blocked;
-
-	n_blocked = g_signal_handlers_block_by_func
-	            (G_OBJECT(mute_item), DATA_PTR(handler_func), handler_data);
-	g_assert(n_blocked == 1);
-
-	if (has_mute == FALSE) {
-		gtk_check_menu_item_set_active(mute_item, TRUE);
-		gtk_widget_set_sensitive(GTK_WIDGET(mute_item), FALSE);
-		gtk_widget_set_tooltip_text(GTK_WIDGET(mute_item),
-		                            _("Soundcard has no mute switch"));
-	} else {
-		gtk_check_menu_item_set_active(mute_item, muted);
-		gtk_widget_set_tooltip_text(GTK_WIDGET(mute_item), NULL);
-	}
-
-	g_signal_handlers_unblock_by_func
-	(G_OBJECT(mute_item),  DATA_PTR(handler_func), handler_data);
-}
-
-#endif
-
 /* Public functions & signal handlers */
 
 struct popup_menu {
@@ -101,11 +63,7 @@ struct popup_menu {
 	/* Widgets */
 	GtkWidget *menu_window;
 	GtkWidget *menu;
-#ifdef WITH_GTK3
 	GtkWidget *mute_check;
-#else
-	GtkWidget *mute_item;
-#endif
 };
 
 /**
@@ -115,11 +73,7 @@ struct popup_menu {
  * @param menu PopupMenu instance set when the signal handler was connected.
  */
 void
-#ifdef WITH_GTK3
 on_mute_item_activate(G_GNUC_UNUSED GtkMenuItem *item,
-#else
-on_mute_item_activate(G_GNUC_UNUSED GtkCheckMenuItem *item,
-#endif
                       PopupMenu *menu)
 {
 	audio_toggle_mute(menu->audio, AUDIO_USER_POPUP);
@@ -189,14 +143,8 @@ on_audio_changed(G_GNUC_UNUSED Audio *audio, AudioEvent *event, gpointer data)
 {
 	PopupMenu *menu = (PopupMenu *) data;
 
-#ifdef WITH_GTK3
 	update_mute_check(GTK_TOGGLE_BUTTON(menu->mute_check),
 	                  event->has_mute, event->muted);
-#else
-	update_mute_item(GTK_CHECK_MENU_ITEM(menu->mute_item),
-	                 G_CALLBACK(on_mute_item_activate),
-	                 menu, event->has_mute, event->muted);
-#endif
 }
 
 /**
@@ -276,13 +224,8 @@ popup_menu_create(Audio *audio)
 	/* Save some widgets for later use */
 	assign_gtk_widget(builder, menu, menu_window);
 	assign_gtk_widget(builder, menu, menu);
-#ifdef WITH_GTK3
 	assign_gtk_widget(builder, menu, mute_check);
-#else
-	assign_gtk_widget(builder, menu, mute_item);
-#endif
 
-#ifdef WITH_GTK3
 	/* Gtk3 doesn't seem to scale images automatically like Gtk2 did.
 	 * If we have a 'broken' icon set that only provides one size of icon
 	 * (let's say 128x128), Gtk2 would scale it appropriately, but not Gtk3.
@@ -327,7 +270,6 @@ popup_menu_create(Audio *audio)
 		gtk_image_set_pixel_size(GTK_IMAGE(about_image), new_height);
 		gtk_image_set_pixel_size(GTK_IMAGE(quit_image), new_height);
 	}
-#endif
 
 	/* Connect ui signal handlers */
 	gtk_builder_connect_signals(builder, menu);

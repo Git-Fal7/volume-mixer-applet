@@ -29,11 +29,7 @@
 
 #include "main.h"
 
-#ifdef WITH_GTK3
-#define HOTKEY_DIALOG_UI_FILE "hotkey-dialog-gtk3.glade"
-#else
-#define HOTKEY_DIALOG_UI_FILE "hotkey-dialog-gtk2.glade"
-#endif
+#define HOTKEY_DIALOG_UI_FILE "hotkey-dialog.glade"
 
 /* Helpers */
 

@@ -1,5 +1,2 @@
 add_subdirectory(desktop)
-add_subdirectory(icons)
-add_subdirectory(man)
-add_subdirectory(pixmaps)
 add_subdirectory(ui)

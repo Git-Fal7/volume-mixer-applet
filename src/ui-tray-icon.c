@@ -138,11 +138,7 @@ pixbuf_new_from_stock(const gchar **icon_names, gint size)
 		g_error_free(err);
 	}
 
-#ifdef WITH_GTK3
 	g_object_unref(info);
-#else
-	gtk_icon_info_free(info);
-#endif
 
 	return pixbuf;
 }
@@ -167,15 +163,11 @@ static GdkPixbuf **
 pixbuf_array_new(int size)
 {
 	GdkPixbuf **pixbufs;
-	gboolean system_theme;
 
 	pixbufs = g_new0(GdkPixbuf *, N_VOLUME_PIXBUFS);
 
 	DEBUG("Building pixbuf array (requesting size %d)", size);
 
-	system_theme = prefs_get_boolean("SystemTheme", FALSE);
-
-	if (system_theme) {
 		pixbufs[VOLUME_MUTED] = pixbuf_new_from_stock(
 		(const gchar*[]) {
 			"audio-volume-muted-panel", "audio-volume-muted", NULL
@@ -196,14 +188,6 @@ pixbuf_array_new(int size)
 		(const gchar*[]) {
 			"audio-volume-high-panel", "audio-volume-high", NULL
 		}, size);
-	} else {
-		pixbufs[VOLUME_MUTED] = pixbuf_new_from_file("pnmixer-muted.png");
-		pixbufs[VOLUME_OFF] = pixbuf_new_from_file("pnmixer-off.png");
-		pixbufs[VOLUME_LOW] = pixbuf_new_from_file("pnmixer-low.png");
-		pixbufs[VOLUME_MEDIUM] = pixbuf_new_from_file("pnmixer-medium.png");
-		pixbufs[VOLUME_HIGH] = pixbuf_new_from_file("pnmixer-high.png");
-	}
-
 	return pixbufs;
 }
 

@@ -24,9 +24,7 @@
 #include <gtk/gtk.h>
 #include <gdk/gdk.h>
 #include <gdk/gdkx.h>
-#ifndef WITH_GTK3
 #include <gdk/gdkkeysyms.h>
-#endif
 
 #include "audio.h"
 #include "prefs.h"
@@ -40,11 +38,7 @@
 
 #include "main.h"
 
-#ifdef WITH_GTK3
-#define PREFS_UI_FILE "prefs-dialog-gtk3.glade"
-#else
-#define PREFS_UI_FILE "prefs-dialog-gtk2.glade"
-#endif
+#define PREFS_UI_FILE "prefs-dialog.glade"
 
 /* Helpers */
 
@@ -190,7 +184,6 @@ struct prefs_dialog {
 	GtkAdjustment *vol_meter_pos_adjustment;
 	GtkWidget *vol_meter_color_label;
 	GtkWidget *vol_meter_color_button;
-	GtkWidget *system_theme;
 	/* Device panel */
 	GtkWidget *card_combo;
 	GtkWidget *chan_combo;
@@ -211,19 +204,6 @@ struct prefs_dialog {
 	GtkWidget *hotkeys_up_label;
 	GtkWidget *hotkeys_down_eventbox;
 	GtkWidget *hotkeys_down_label;
-	/* Notifications panel */
-#ifdef WITH_LIBNOTIFY
-	GtkWidget *noti_vbox_enabled;
-	GtkWidget *noti_enable_check;
-	GtkWidget *noti_timeout_label;
-	GtkWidget *noti_timeout_spin;
-	GtkWidget *noti_hotkey_check;
-	GtkWidget *noti_mouse_check;
-	GtkWidget *noti_popup_check;
-	GtkWidget *noti_ext_check;
-#else
-	GtkWidget *noti_vbox_disabled;
-#endif
 };
 
 /**
@@ -508,11 +488,6 @@ prefs_dialog_retrieve(PrefsDialog *dialog)
 #endif
 	prefs_set_double_list("VolMeterColor", colors, 3);
 
-	// icon theme
-	GtkWidget *system_theme = dialog->system_theme;
-	active = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(system_theme));
-	prefs_set_boolean("SystemTheme", active);
-
 	// audio card
 	GtkWidget *acc = dialog->card_combo;
 	gchar *card = gtk_combo_box_text_get_active_text(GTK_COMBO_BOX_TEXT(acc));
@@ -579,34 +554,6 @@ prefs_dialog_retrieve(PrefsDialog *dialog)
 	get_keycode_for_label(GTK_LABEL(kl), &keycode, &mods);
 	prefs_set_integer("VolDownKey", keycode);
 	prefs_set_integer("VolDownMods", mods);
-
-	// notifications
-#ifdef WITH_LIBNOTIFY
-	GtkWidget *nc = dialog->noti_enable_check;
-	gint noti_spin;
-	active = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(nc));
-	prefs_set_boolean("EnableNotifications", active);
-
-	nc = dialog->noti_hotkey_check;
-	active = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(nc));
-	prefs_set_boolean("HotkeyNotifications", active);
-
-	nc = dialog->noti_mouse_check;
-	active = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(nc));
-	prefs_set_boolean("MouseNotifications", active);
-
-	nc = dialog->noti_popup_check;
-	active = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(nc));
-	prefs_set_boolean("PopupNotifications", active);
-
-	nc = dialog->noti_ext_check;
-	active = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(nc));
-	prefs_set_boolean("ExternalNotifications", active);
-
-	nc = dialog->noti_timeout_spin;
-	noti_spin = gtk_spin_button_get_value_as_int(GTK_SPIN_BUTTON(nc));
-	prefs_set_integer("NotificationTimeout", noti_spin);
-#endif
 }
 
 /**
@@ -686,11 +633,6 @@ prefs_dialog_populate(PrefsDialog *dialog)
 #endif
 	g_free(vol_meter_clrs);
 
-	// icon theme
-	gtk_toggle_button_set_active
-	(GTK_TOGGLE_BUTTON(dialog->system_theme),
-	 prefs_get_boolean("SystemTheme", FALSE));
-
 	// fill in card & channel combo boxes
 	fill_card_combo(GTK_COMBO_BOX_TEXT(dialog->card_combo), dialog->audio);
 #ifdef GTK3
@@ -760,35 +702,6 @@ prefs_dialog_populate(PrefsDialog *dialog)
 	on_hotkeys_enable_check_toggled
 	(GTK_TOGGLE_BUTTON(dialog->hotkeys_enable_check), dialog);
 
-	// notifications
-#ifdef WITH_LIBNOTIFY
-	gtk_toggle_button_set_active
-	(GTK_TOGGLE_BUTTON(dialog->noti_enable_check),
-	 prefs_get_boolean("EnableNotifications", FALSE));
-
-	gtk_toggle_button_set_active
-	(GTK_TOGGLE_BUTTON(dialog->noti_hotkey_check),
-	 prefs_get_boolean("HotkeyNotifications", TRUE));
-
-	gtk_toggle_button_set_active
-	(GTK_TOGGLE_BUTTON(dialog->noti_mouse_check),
-	 prefs_get_boolean("MouseNotifications", TRUE));
-
-	gtk_toggle_button_set_active
-	(GTK_TOGGLE_BUTTON(dialog->noti_popup_check),
-	 prefs_get_boolean("PopupNotifications", FALSE));
-
-	gtk_toggle_button_set_active
-	(GTK_TOGGLE_BUTTON(dialog->noti_ext_check),
-	 prefs_get_boolean("ExternalNotifications", FALSE));
-
-	gtk_spin_button_set_value
-	(GTK_SPIN_BUTTON(dialog->noti_timeout_spin),
-	 prefs_get_integer("NotificationTimeout", 1500));
-
-	on_noti_enable_check_toggled
-	(GTK_TOGGLE_BUTTON(dialog->noti_enable_check), dialog);
-#endif
 }
 
 /**
@@ -853,19 +766,6 @@ prefs_dialog_create(GtkWindow *parent, Audio *audio, Hotkeys *hotkeys,
 	DEBUG("Building from ui file '%s'", uifile);
 	builder = gtk_builder_new_from_file(uifile);
 
-	/* Append the notification page.
-	 * This has to be done manually here, in the C code,
-	 * because notifications support is optional at build time.
-	 */
-	gtk_notebook_append_page
-	(GTK_NOTEBOOK(gtk_builder_get_object(builder, "notebook")),
-#ifdef WITH_LIBNOTIFY
-	 GTK_WIDGET(gtk_builder_get_object(builder, "noti_vbox_enabled")),
-#else
-	 GTK_WIDGET(gtk_builder_get_object(builder, "noti_vbox_disabled")),
-#endif
-	 gtk_label_new(_("Notifications")));
-
 	/* Save some widgets for later use */
 	// Top level widgets
 	assign_gtk_widget(builder, dialog, prefs_dialog);
@@ -883,7 +783,6 @@ prefs_dialog_create(GtkWindow *parent, Audio *audio, Hotkeys *hotkeys,
 	assign_gtk_adjustment(builder, dialog, vol_meter_pos_adjustment);
 	assign_gtk_widget(builder, dialog, vol_meter_color_label);
 	assign_gtk_widget(builder, dialog, vol_meter_color_button);
-	assign_gtk_widget(builder, dialog, system_theme);
 	// Device panel
 	assign_gtk_widget(builder, dialog, card_combo);
 	assign_gtk_widget(builder, dialog, chan_combo);
@@ -904,19 +803,6 @@ prefs_dialog_create(GtkWindow *parent, Audio *audio, Hotkeys *hotkeys,
 	assign_gtk_widget(builder, dialog, hotkeys_up_label);
 	assign_gtk_widget(builder, dialog, hotkeys_down_eventbox);
 	assign_gtk_widget(builder, dialog, hotkeys_down_label);
-	// Notifications panel
-#ifdef WITH_LIBNOTIFY
-	assign_gtk_widget(builder, dialog, noti_vbox_enabled);
-	assign_gtk_widget(builder, dialog, noti_enable_check);
-	assign_gtk_widget(builder, dialog, noti_timeout_spin);
-	assign_gtk_widget(builder, dialog, noti_timeout_label);
-	assign_gtk_widget(builder, dialog, noti_hotkey_check);
-	assign_gtk_widget(builder, dialog, noti_mouse_check);
-	assign_gtk_widget(builder, dialog, noti_popup_check);
-	assign_gtk_widget(builder, dialog, noti_ext_check);
-#else
-	assign_gtk_widget(builder, dialog, noti_vbox_disabled);
-#endif
 
 	/* Set transient parent */
 	gtk_window_set_transient_for(GTK_WINDOW(dialog->prefs_dialog), parent);

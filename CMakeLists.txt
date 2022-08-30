@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.0)
-project(PNMixer)
+project(volume-mixer-applet)
 
 
 ## cmake modules
@@ -14,14 +14,8 @@ set(PNMixer_VERSION_MAJOR 0)
 set(PNMixer_VERSION_MINOR 7)
 set(PNMixer_VERSION_MICRO 2)
 set(PACKAGE_VERSION "${PNMixer_VERSION_MAJOR}.${PNMixer_VERSION_MINOR}.${PNMixer_VERSION_MICRO}")
-set(PACKAGE "pnmixer")
+set(PACKAGE "volume-mixer-applet")
 
-
-## options
-option(WITH_GTK3 "Use Gtk3 as toolkit" ON)
-option(WITH_LIBNOTIFY "Enable sending of notifications" ON)
-option(ENABLE_NLS "Enable building of translations" ON)
-option(BUILD_DOCUMENTATION "Use Doxygen to create the HTML based API documentation" OFF)
 # https://github.com/nicklan/pnmixer/issues/178
 if (CMAKE_BUILD_TYPE STREQUAL Release)
 	set(DATA_IN_CWD_default OFF)
@@ -30,26 +24,8 @@ else()
 endif()
 option(DATA_IN_CWD "Whether to also look for data files in the current directory" ${DATA_IN_CWD_default})
 
-
-
-## packages required across multiple subdirectories
-if(ENABLE_NLS)
-	# find gettext programs
-	find_package(Gettext)
-	FIND_PROGRAM(XGETTEXT_EXECUTABLE xgettext)
-	IF(XGETTEXT_EXECUTABLE)
-		MESSAGE(STATUS "Found xgettext: ${XGETTEXT_EXECUTABLE}")
-	ELSE(XGETTEXT_EXECUTABLE)
-		MESSAGE(FATAL_ERROR "xgettext not found")
-	ENDIF(XGETTEXT_EXECUTABLE)
-endif(ENABLE_NLS)
-
-
 ## subdirectories
 add_subdirectory(data)
-if(ENABLE_NLS)
-	add_subdirectory(po)
-endif(ENABLE_NLS)
 add_subdirectory(src)
 
 

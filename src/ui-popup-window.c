@@ -45,9 +45,7 @@
 #include <glib.h>
 #include <gtk/gtk.h>
 #include <gdk/gdkx.h>
-#ifndef WITH_GTK3
 #include <gdk/gdkkeysyms.h>
-#endif
 
 #include "audio.h"
 #include "prefs.h"
@@ -58,13 +56,8 @@
 
 #include "main.h"
 
-#ifdef WITH_GTK3
-#define POPUP_WINDOW_HORIZONTAL_UI_FILE "popup-window-horizontal-gtk3.glade"
-#define POPUP_WINDOW_VERTICAL_UI_FILE   "popup-window-vertical-gtk3.glade"
-#else
-#define POPUP_WINDOW_HORIZONTAL_UI_FILE "popup-window-horizontal-gtk2.glade"
-#define POPUP_WINDOW_VERTICAL_UI_FILE   "popup-window-vertical-gtk2.glade"
-#endif
+#define POPUP_WINDOW_HORIZONTAL_UI_FILE "popup-window-horizontal.glade"
+#define POPUP_WINDOW_VERTICAL_UI_FILE   "popup-window-vertical.glade"
 
 /* Helpers */
 
@@ -144,7 +137,6 @@ update_volume_slider(GtkAdjustment *vol_scale_adj, gdouble volume)
 }
 
 /* Grab mouse and keyboard */
-#ifdef WITH_GTK3
 #if GTK_CHECK_VERSION(3,20,0)
 static void
 grab_devices(GtkWidget *window)
@@ -209,17 +201,6 @@ grab_devices(GtkWidget *window)
 		WARN("Could not grab %s", gdk_device_get_name(keyboard_dev));
 }
 #endif /*  GTK_CHECK_VERSION(3,20,0) */
-#else
-static void
-grab_devices(GtkWidget *window)
-{
-	gdk_pointer_grab(gtk_widget_get_window(window), TRUE,
-	                 GDK_BUTTON_PRESS_MASK, NULL, NULL,
-	                 GDK_CURRENT_TIME);
-	gdk_keyboard_grab(gtk_widget_get_window(window), TRUE,
-	                  GDK_CURRENT_TIME);
-}
-#endif /* WITH_GTK3 */
 
 /* Public functions & signal handlers */
 
@@ -252,13 +233,9 @@ on_popup_window_event(G_GNUC_UNUSED GtkWidget *widget, GdkEvent *event,
 	/* If a click happens outside of the popup, hide it */
 	case GDK_BUTTON_PRESS: {
 		gint x, y;
-#ifdef WITH_GTK3
 		GdkDevice *device = gtk_get_current_event_device();
 
 		if (!gdk_device_get_window_at_position(device, &x, &y))
-#else
-		if (!gdk_window_at_pointer(&x, &y))
-#endif
 			popup_window_hide(window);
 
 		break;
